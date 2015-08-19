@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Player HTTP/2</title>
+        <script type="text/javascript" src="jquery-1.11.3.min.js"></script>
+        <script type="text/javascript" src="URI.min.js"></script>
+        <script type="text/javascript" src="new_probe.js"></script>
+    </head>
+    <body>
+        <div>
+            <video id="videoTag" height="400px" width="400px" id="videoPlayer" controls="true"></video>
+        </div>
+        <div>
+            <table id="chunkTab">
+              <tr>
+                <th>chunk</th>
+                <th>requestStart</th>
+                <th>responseStart</th>
+                <th>responseEnd</th>
+              </tr>
+          </table>
+        </div>
+        <div>
+            <table id="featureTab">
+              <tr>
+                <th>Features</th>
+                <th>Value</th>
+              </tr>
+            </table>
+        </div>
+        <script src="dash.all.js"></script>
+        <script>
+          (function(){
+                /*var protocol=new URI().protocol();
+                var port="8080";
+	        if(window.chrome.loadTimes().wasFetchedViaSpdy){
+	            port=8082;
+	        }
+                if(protocol=="https"){
+                    port=8081;
+	            if(window.chrome.loadTimes().wasFetchedViaSpdy){
+	                port=8083;
+                    }
+                }
+                url = protocol+"://127.0.0.1:"+port+"/movies/gpac-content/mp4-main-multi-mpd-AV-NBS.mpd";
+                var context = new Dash.di.DashContext();
+                player = new MediaPlayer(context);
+                player.startup();
+                player.attachView(document.querySelector("#videoTag"));
+                player.attachSource(url);*/
+            })();
+        </script>
+    </body>
+</html>
