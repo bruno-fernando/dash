@@ -298,6 +298,6 @@ $(document).ready(function() {
     }
     var url = protocol + "://" + ip_addr + ":" + port + "/movies/gpac-content/mp4-main-multi-mpd-AV-NBS.mpd";
     urlNode = protocol + "://127.0.0.1:" + portNode + "/insert";
-    manifestURL = url;
+    manifestURL = protocol + "://" + ip_addr + "/movies/gpac-content/mp4-main-multi-mpd-AV-NBS.mpd";;
     runPlayer(url);
 });
