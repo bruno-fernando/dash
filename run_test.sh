@@ -5,7 +5,7 @@
 # Variables
 
 PROTOCOL=("http" "https" "h2")
-PORT=("8080" "8081" "8083")
+PORT=("80" "443" "443")
 ARRAY_LENGTH=$((${#PROTOCOL[@]}-1))
 
 INCOGNITO="--incognito"
@@ -29,6 +29,9 @@ function clear_cache {
 
 
 # main
+
+pkill chromium-browser
+pkill chromium
 
 for i in $(seq 0 $ARRAY_LENGTH)
 do
