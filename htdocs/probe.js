@@ -52,11 +52,11 @@ function ended() {
     window.clearInterval(getQualityTimer);
     computeNavigationTiming();
     // SEND the metrics object to node.js server @SEE ajax.js
-    $.post(urlNode, metrics, _success);
+    $.post(urlNode, metrics, success);
     // window.close()
 }
 
-function _success(data, textStatus, jqXHR) {
+function success(data, textStatus, jqXHR) {
     if (data.status == "ok") {
         console.log("Can close the browser");
         window.close();
@@ -67,6 +67,15 @@ function stalled() {
     metrics.nbStalls++; // Total number of stalled event
     metrics.stalledSet.push(video.currentTime); // Date related the video duration, from which the event was raised
 }
+
+/*function getName(){
+    $.get(manifestURL,"",function(data,textStatus,jqXHR){
+        var elementName=;
+        var xmlDoc=$.parseXML(data);
+        var xml=$(xmlDoc);
+        var name=xml.find(elementName).text();
+    }
+}*/
 
 // Compute the startup time
 // @param time : Time when the video begins to be played
@@ -250,11 +259,14 @@ function runPlayer(url) {
 // When document is loaded
 $(document).ready(function() {
     console.log("################# DOM ready !!! ############################");
-
+    var uri=new URI();
     firstPlay = true;
+    
+    video = $("#videoTag")[0];
+    var videoName=uri.filename().split(".")[0];
 
     metrics = {
-        name: "video_GPAC",
+        name: videoName,
         duration: 0,
         startupTime: 0,
         nbStalls: 0
@@ -263,25 +275,21 @@ $(document).ready(function() {
     metrics.navigationTiming = [];
     metrics.stalledSet = [];
 
-    video = $("#videoTag")[0];
-
     // Triggers element
     $("#videoTag").on("playing", playing);
     $("#videoTag").on("ended", ended);
     $("#videoTag").on("stalled", stalled);
 
-    /*div=$("#chunkTab")[0];
-    div.onclick=function(){
-    console.log("****************** CLICK **********************");
-    };*/
-
-    var protocol = new URI().protocol();
-    var ip_addr = "161.106.2.57";
+    // Configuration of content location
+    var protocol = uri.protocol();
+    var ip_addr = location.host; //"161.106.2.57";
+    
+    // Port for node.js server for non-secure communication
+    var portNode = "8000";
+    
     // By default, I assume it is HTTP/1.1
     var port = "80";
     metrics.protocol = "http/1.1";
-    // Port for node.js server for non-secure communication
-    var portNode = "8000";
 
     if (window.chrome.loadTimes().wasFetchedViaSpdy) {
         port = "80";
@@ -296,8 +304,8 @@ $(document).ready(function() {
             metrics.protocol = "h2";
         }
     }
-    var url = protocol + "://" + ip_addr + ":" + port + "/movies/gpac-content/mp4-main-multi-mpd-AV-NBS.mpd";
+    var url = protocol + "://" + ip_addr + ":" + port + "/content/"+videoName+"/"+videoName+".mpd";//"/movies/gpac-content/mp4-main-multi-mpd-AV-NBS.mpd";
     urlNode = protocol + "://127.0.0.1:" + portNode + "/insert";
-    manifestURL = protocol + "://" + ip_addr + "/movies/gpac-content/mp4-main-multi-mpd-AV-NBS.mpd";;
+    manifestURL = protocol + "://" + ip_addr + "/content/"+videoName+"/"+videoName+".mpd"
     runPlayer(url);
 });
