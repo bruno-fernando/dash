@@ -19,10 +19,14 @@ PROTO_OPTIONS=
 
 BROWSER="chromium-browser"
 
-IP_ADDR=${1}
+IP_ADDR="127.0.0.1"
 URL=
+RESOURCES=
 
-ERROR="${0} <IP_ADDR>"
+DELAY="0"
+LOSSES="0"
+
+ERROR="${0} [-i=<IP_ADDR>] [-l=<LOSSES>] [-d=<DELAY>] -r=<RESOURCE>[,<RESOURCE>*]"
 
 # Functions
 
@@ -30,41 +34,86 @@ function clear_cache {
     echo "clear cache"
 }
 
+function check_options {
+    echo "check options"
+}
 
 # main
 
-if [ $# != 1 ]
-then
-    echo $ERROR
-    exit 1
-fi
+
+for opt in "$@"
+do
+    case $opt in
+	-i=*|--ip=*)
+	value="${opt#*=}"
+	if [ ! -z "$value" ]
+	then
+	    IP_ADDR=$value
+	fi
+	shift # past argument=value
+	;;
+	-l=*|--losses=*)
+	value="${opt#*=}"
+	if [ ! -z "$value" ]
+        then
+	    LOSSES=$value
+	fi
+	shift # past argument=value
+	;;
+	-d=*|--delay=*)
+	value="${opt#*=}"
+	if [ ! -z "$value" ]
+        then
+	    DELAY=$value
+	fi
+	shift # past argument=value
+	;;
+	-r=*|--resources=*)
+	value="${opt#*=}"
+	if [ ! -z "$value" ]
+        then
+	    RESOURCES=$value
+	else
+	    echo $ERROR
+	    exit 1
+	fi
+	shift # past argument with no value
+	;;
+	*)
+            # unknown option
+	    echo $ERROR
+	    exit 1
+	    ;;
+    esac
+done
 
 #pkill chromium-browser
 #pkill chromium
-
-for i in $(seq 0 $ARRAY_LENGTH)
+for res in $(echo $RESOURCES | sed "s/,/ /g")
 do
-    echo ${PROTOCOL[$i]}
-    if [ ${PROTOCOL[$i]} = "http" ]
-    then
-	URL="http://${IP_ADDR}:${PORT[$i]}/player.html"
-	PROTO_OPTIONS="--use-spdy=off"
-	echo $URL
-    elif [ ${PROTOCOL[$i]} = "https" ]
-    then
-	URL="https://${IP_ADDR}:${PORT[$i]}/player.html"
-	PROTO_OPTIONS="--use-spdy=off"
-	echo $URL
-    elif [ ${PROTOCOL[$i]} = "h2" ]
-    then
-	URL="https://${IP_ADDR}:${PORT[$i]}/player.html"
-	PROTO_OPTIONS="--enable-spdy4"
-	echo $URL
-    else
-	echo "Invalid protocol"
-    fi
+    for i in $(seq 0 $ARRAY_LENGTH)
+    do
+	echo ${PROTOCOL[$i]}
+	if [ ${PROTOCOL[$i]} = "http" ]
+	then
+	    URL="http://${IP_ADDR}:${PORT[$i]}/$res"
+	    PROTO_OPTIONS="--use-spdy=off"
+	    echo $URL
+	elif [ ${PROTOCOL[$i]} = "https" ]
+	then
+	    URL="https://${IP_ADDR}:${PORT[$i]}/$res"
+	    PROTO_OPTIONS="--use-spdy=off"
+	    echo $URL
+	elif [ ${PROTOCOL[$i]} = "h2" ]
+	then
+	    URL="https://${IP_ADDR}:${PORT[$i]}/$res"
+	    PROTO_OPTIONS="--enable-spdy4"
+	    echo $URL
+	else
+	    echo "Invalid protocol"
+	fi
 
-    echo "chromium-browser $OPTIONS $PROTO_OPTIONS $URL"
+	echo "chromium-browser $OPTIONS $PROTO_OPTIONS $URL"
     #chromium-browser $OPTIONS $URL 
+    done
 done
-
