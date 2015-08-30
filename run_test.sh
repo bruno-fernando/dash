@@ -4,8 +4,8 @@
 
 # Variables
 
-PROTOCOL=("http" "https" "h2")
-PORT=("80" "443" "443")
+PROTOCOL=("https" "http" "h2")
+PORT=("443" "80" "443")
 ARRAY_LENGTH=$((${#PROTOCOL[@]}-1))
 
 INCOGNITO="--incognito"
@@ -14,7 +14,7 @@ NO_BROWSER_CHECK="--no-default-browser-check"
 
 DISABLE_CACHE="--disable-cache --disable-gpu-program-cache --disable-gpu-shader-disk-cache --disable-offline-load-stale-cache --disk-cache-size=0 --gpu-program-cache-size-kb=0 --media-cache-size=0 --disable-application-cache"
 
-OPTIONS="$INCOGNITO $IGNORE_CERTIFICATE $NO_BROWSER_CHECK" #$DISABLE_CACHE"
+OPTIONS="$INCOGNITO $IGNORE_CERTIFICATE $NO_BROWSER_CHECK $DISABLE_CACHE"
 PROTO_OPTIONS=
 
 BROWSER="chromium-browser"
@@ -31,7 +31,8 @@ ERROR="${0} [-i=<IP_ADDR>] [-l=<LOSSES>] [-d=<DELAY>] -r=<RESOURCE>[,<RESOURCE>*
 # Functions
 
 function clear_cache {
-    echo "clear cache"
+    echo "CLEAR CACHE"
+    rm -rf ~/.cache/chromium
 }
 
 function check_options {
@@ -40,6 +41,11 @@ function check_options {
 
 # main
 
+if [ -z "$*" ]
+then
+    echo $ERROR
+    exit 1
+fi
 
 for opt in "$@"
 do
@@ -87,24 +93,27 @@ do
     esac
 done
 
-#pkill chromium-browser
-#pkill chromium
+pkill chromium-browser
+pkill chromium
+
+clear_cache
+
 for res in $(echo $RESOURCES | sed "s/,/ /g")
 do
     for i in $(seq 0 $ARRAY_LENGTH)
     do
 	echo ${PROTOCOL[$i]}
-	if [ ${PROTOCOL[$i]} = "http" ]
+	if [ ${PROTOCOL[$i]} == "http" ]
 	then
 	    URL="http://${IP_ADDR}:${PORT[$i]}/$res"
 	    PROTO_OPTIONS="--use-spdy=off"
 	    echo $URL
-	elif [ ${PROTOCOL[$i]} = "https" ]
+	elif [ ${PROTOCOL[$i]} == "https" ]
 	then
 	    URL="https://${IP_ADDR}:${PORT[$i]}/$res"
 	    PROTO_OPTIONS="--use-spdy=off"
 	    echo $URL
-	elif [ ${PROTOCOL[$i]} = "h2" ]
+	elif [ ${PROTOCOL[$i]} == "h2" ]
 	then
 	    URL="https://${IP_ADDR}:${PORT[$i]}/$res"
 	    PROTO_OPTIONS="--enable-spdy4"
@@ -114,6 +123,9 @@ do
 	fi
 
 	echo "chromium-browser $OPTIONS $PROTO_OPTIONS $URL"
-    #chromium-browser $OPTIONS $URL 
+	chromium-browser $OPTIONS $PROTO_OPTIONS $URL 
+	clear_cache
     done
 done
+
+exit 0
