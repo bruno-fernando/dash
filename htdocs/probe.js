@@ -1,11 +1,11 @@
 // Class
 // NavigationTimingInfo : unit of data for navigation timing
-// @attr ressourceName : name of the ressource fetched
+// @attr resourceName : name of the resource fetched
 // @attr requestStart : date on which the beginning of the request was send
 // @attr responseStart : date on which the beginning of the response was received
 // @attr responseEnd : date on which the end of the response was received
-function NavigationTimingInfo(ressourceName, requestStart, responseStart, responseEnd) {
-    this.ressourceName = ressourceName;
+function NavigationTimingInfo(resourceName, requestStart, responseStart, responseEnd) {
+    this.resourceName = resourceName;
     this.requestStart = requestStart;
     this.responseStart = responseStart;
     this.responseEnd = responseEnd;
@@ -89,7 +89,8 @@ function computeStartupTime(time) {
 }
 
 function computeNavigationTiming() {
-    var ressourceName,
+    var name,
+        resourceName,
         requestStart,
         responseStart,
         responseEnd;
@@ -97,12 +98,13 @@ function computeNavigationTiming() {
     var navigationTiming = window.performance.getEntries();
 
     for (var i = 0; i < navigationTiming.length; i++) {
-        if (navigationTiming[i].initiatorType == "xmlhttprequest") {
-            ressourceName = (new URI(navigationTiming[i].name)).filename();
+        name=(new URI(navigationTiming[i].name)).filename();
+        if (navigationTiming[i].initiatorType == "xmlhttprequest" && name) {
+            resourceName = name;
             requestStart = navigationTiming[i].requestStart;
             responseStart = navigationTiming[i].responseStart;
             responseEnd = navigationTiming[i].responseEnd;
-            metrics.navigationTiming.push(new NavigationTimingInfo(ressourceName, requestStart, responseStart, responseEnd));
+            metrics.navigationTiming.push(new NavigationTimingInfo(resourceName, requestStart, responseStart, responseEnd));
         }
     }
 }
