@@ -39,6 +39,15 @@ function check_options {
     echo "check options"
 }
 
+function set_delay_and_losses {
+    sudo tc qdisc add dev ${1} root netem delay ${2}ms loss ${3}%
+}
+
+function unset_delay_and_losses {
+    sudo tc qdisc del root dev ${1}
+}
+
+
 # main
 
 if [ -z "$*" ]
@@ -97,6 +106,7 @@ pkill chromium-browser
 pkill chromium
 
 clear_cache
+set_delay_and_losses "eth0" $DELAY $LOSSES
 
 for res in $(echo $RESOURCES | sed "s/,/ /g")
 do
@@ -127,5 +137,7 @@ do
 	clear_cache
     done
 done
+
+unset_delay_and_losses "eth0"
 
 exit 0
