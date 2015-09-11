@@ -26,7 +26,7 @@ RESOURCES=
 DELAY="0"
 LOSSES="0"
 
-ERROR="${0} [-i=<IP_ADDR>] [-l=<LOSSES>] [-d=<DELAY>] -r=<RESOURCE>[,<RESOURCE>*]"
+ERROR="${0} [-h] [-i=<IP_ADDR>] [-l=<LOSSES>] [-d=<DELAY>] -r=<RESOURCE>[,<RESOURCE>*]"
 
 # Functions
 
@@ -39,11 +39,11 @@ function check_options {
     echo "check options"
 }
 
-function set_delay_and_losses {
+function set_netem {
     sudo tc qdisc add dev ${1} root netem delay ${2}ms loss ${3}%
 }
 
-function unset_delay_and_losses {
+function unset_netem {
     sudo tc qdisc del root dev ${1}
 }
 
@@ -94,6 +94,11 @@ do
 	fi
 	shift # past argument with no value
 	;;
+	-h|--help)
+	    echo $ERROR
+	    shift
+	    exit 0
+	    ;;
 	*)
             # unknown option
 	    echo $ERROR
@@ -106,38 +111,42 @@ pkill chromium-browser
 pkill chromium
 
 clear_cache
-set_delay_and_losses "eth0" $DELAY $LOSSES
+#unset_netem "eth0"
+#set_netem "eth0" $DELAY $LOSSES
 
-for res in $(echo $RESOURCES | sed "s/,/ /g")
+while true
 do
-    for i in $(seq 0 $ARRAY_LENGTH)
+    for res in $(echo $RESOURCES | sed "s/,/ /g")
     do
-	echo ${PROTOCOL[$i]}
-	if [ ${PROTOCOL[$i]} == "http" ]
-	then
-	    URL="http://${IP_ADDR}:${PORT[$i]}/$res"
-	    PROTO_OPTIONS="--use-spdy=off"
-	    echo $URL
-	elif [ ${PROTOCOL[$i]} == "https" ]
-	then
-	    URL="https://${IP_ADDR}:${PORT[$i]}/$res"
-	    PROTO_OPTIONS="--use-spdy=off"
-	    echo $URL
-	elif [ ${PROTOCOL[$i]} == "h2" ]
-	then
-	    URL="https://${IP_ADDR}:${PORT[$i]}/$res"
-	    PROTO_OPTIONS="--enable-spdy4"
-	    echo $URL
-	else
-	    echo "Invalid protocol"
-	fi
+	for i in $(seq 0 $ARRAY_LENGTH)
+	do
+	    echo ${PROTOCOL[$i]}
+	    if [ ${PROTOCOL[$i]} == "http" ]
+	    then
+		URL="http://${IP_ADDR}:${PORT[$i]}/$res"
+		PROTO_OPTIONS="--use-spdy=off"
+		echo $URL
+	    elif [ ${PROTOCOL[$i]} == "https" ]
+	    then
+		URL="https://${IP_ADDR}:${PORT[$i]}/$res"
+		PROTO_OPTIONS="--use-spdy=off"
+		echo $URL
+	    elif [ ${PROTOCOL[$i]} == "h2" ]
+	    then
+		URL="https://${IP_ADDR}:${PORT[$i]}/$res"
+		PROTO_OPTIONS="--enable-spdy4"
+		echo $URL
+	    else
+		echo "Invalid protocol"
+	    fi
 
-	echo "chromium-browser $OPTIONS $PROTO_OPTIONS $URL"
-	chromium-browser $OPTIONS $PROTO_OPTIONS $URL 
-	clear_cache
+	    echo "chromium-browser $OPTIONS $PROTO_OPTIONS $URL"
+	    chromium-browser $OPTIONS $PROTO_OPTIONS $URL 
+	    clear_cache
+	done
     done
 done
 
-unset_delay_and_losses "eth0"
+#unset_netem "eth0"
 
 exit 0
