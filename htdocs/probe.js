@@ -30,11 +30,12 @@ function QualityInfo(time, bandwidth, width, height, codec, bufferLevel) {
 
 function playing() {
     console.log("########################## VIDEO IS PLAYING #######################");
-    var time = performance.now(); // Time when the video begins to be played
     var metricsVideo = player.getMetricsFor("video"); // Metrics object for video
     var metricsExt = player.getMetricsExt(); // Extensions of the metrics
 
     if (firstPlay) {
+        var time = performance.now(); // Time when the video begins to be played
+        videoBegin = performance.now();
         metrics.startupTime = computeStartupTime(time); // Startup Time (in ms)
         firstPlay = false;
     }
@@ -48,6 +49,8 @@ function playing() {
 
 function ended() {
     console.log("########################## VIDEO IS ENDED #######################");
+    videoEnd = performance.now();
+    metrics.playingDuration=(videoEnd-videoBegin)/1000; // in seconds
     $("#videoTag").off("playing", playing);
     window.clearInterval(getQualityTimer);
     computeNavigationTiming();
@@ -139,6 +142,8 @@ function getCurrentQuality(metrics, metricsVideo, metricsExt) {
     height = getVideoHeight(repSwitch.to, metricsExt);
     codec = getCodec(repSwitch.to, metricsExt);
     bufferLevel = metricsExt.getCurrentBufferLevel(metricsVideo).level;
+    
+    console.log("################# Quality : "+player.getQualityFor("video")+"###########");
 
     // Add data to global metrics object
     metrics.qualitySet.push(new QualityInfo(time, bandwidth, width, height, codec, bufferLevel));
