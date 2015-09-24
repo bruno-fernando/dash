@@ -205,43 +205,85 @@ app.get('/quality',function(req,res){
     var videoName=req.query.videoName;
     var query={name: videoName};
     var fields='protocol qualitySet';
-    var filename="quality_"+getCurrentDate()+log_extension;
-    var protocol={
-        "http/1.1":[],
-        "https/1.1":[],
-        "h2":[]
+    var filename="quality_"+videoName+"_"+getCurrentDate()+log_extension;
+    var stat={
+        "http/1.1":{
+            data:{},
+            display:[]
+        },
+        "https/1.1":{
+            data:{},
+            display:[]
+        },
+        "h2":{
+            data:{},
+            display:[]
+        }
     };
     
     console.log(videoName);
     
-    /* MetricsModel.find(query,fields,function(err,docs){
-       var content="time,h2,time,https/1.1,time,http/1.1\n",
-       doc={},
-       rtt=0,
-       size;
-       for(var i=0;i<docs.length;i++){
-       doc=docs[i];
-       for(var j=0;j<doc.navigationTiming.length;j++){
-       rtt=doc.navigationTiming[j].responseEnd-doc.navigationTiming[j].requestStart;
-       protocol[doc.protocol].push(rtt);
-       }
-       }
-       size=Math.min(protocol["h2"].length,protocol["https/1.1"].length,protocol["http/1.1"].length);
-       for(var i=0;i<size;i++){
-       content+=protocol["h2"][i]+IFS+protocol["https/1.1"][i]+IFS+protocol["http/1.1"][i];
-       if(i!=(size-1)){
-       content+="\n";
-       }
-       }
-       fs.writeFileSync("./log/"+filename,content);
-       res.type('text/plain');
-       res.send("File "+filename+" generated"+"\n\n"+content);
-       //TODO res.download("/home/bruno/workspace/node-app/log/"+filename);
-       });
-    */
-    res.type('text/plain');
-    res.send("File "+filename+" generated"+"\n\n"+videoName);
+    MetricsModel.find(query,fields,function(err,docs){
+        var content="time,h2,time,https/1.1,time,http/1.1\n",
+        doc={},
+        size;
+        
+        for(var i=0;i<docs.length;i++){
+            doc=docs[i];
+            for(var j=0;j<doc.qualitySet.length;j++){
+                var time=Math.round(doc.qualitySet[j].time)+"";
+                var quality=doc.qualitySet[j].bandwidth
+                if(!stat[doc.protocol].data[time]){
+                    stat[doc.protocol].data[time]=[quality];
+                }
+                else{
+                    stat[doc.protocol].data[time].push(quality);
+                }
+            }
+        }
+        for(var proto in stat){
+            for(var time in stat[proto].data){
+                //stat[proto].average[time]=modeStatistic(stat[proto].data[time]);
+                stat[proto].display.push([time,modeStatistic(stat[proto].data[time])]);
+            }
+        }
+        
+        size=Math.min(stat["h2"].display.length, stat["https/1.1"].display.length, stat["http/1.1"].display.length);
+        
+        for(var i=0;i<size;i++){
+            content+=stat["h2"].display[i][0]+IFS+stat["h2"].display[i][1]+IFS+stat["https/1.1"].display[i][0]+IFS+stat["https/1.1"].display[i][1]+IFS+stat["http/1.1"].display[i][0]+IFS+stat["http/1.1"].display[i][1];
+            if(i!=(size-1)){
+                content+='\n';
+            }
+        }
+        fs.writeFileSync("./log/"+filename,content);
+        res.type('text/plain');
+        res.send("File "+filename+" generated"+"\n\n"+content);
+   });
 });
+
+var modeStatistic=function(tab){
+    modeTab={};
+    for(var i=0;i<tab.length;i++){
+        if(!modeTab[tab[i]]){
+            modeTab[tab[i]]=0;
+        }
+        modeTab[tab[i]]++;
+    }
+    return parseInt(maxIndexObject(modeTab));
+}
+
+var maxIndexObject=function(obj){
+    index=-1;
+    max=Number.MIN_VALUE;
+    for(var i in obj){
+        if(max<obj[i]){
+            max=obj[i];
+            index=i;
+        }
+    }
+    return index;
+}
 
 app.get('/stalls',function(req,res){
     var videoName=req.query.videoName;
@@ -343,81 +385,63 @@ app.get('/stalls',function(req,res){
 
 app.get('/bufferLevel',function(req,res){
     var videoName=req.query.videoName;
-    var query={"name": videoName};
-    var fields='name protocol qualitySet';
+    var query={name: videoName};
+    var fields='protocol qualitySet';
     var filename="bufferLevel_"+videoName+"_"+getCurrentDate()+log_extension;
-    var protocol={
+    var stat={
         "http/1.1":{
-            data:[],
-            average:[]
+            data:{},
+            display:[]
         },
         "https/1.1":{
-            data:[],
-            average:[]
+            data:{},
+            display:[]
         },
         "h2":{
-            data:[],
-            average:[]
+            data:{},
+            display:[]
         }
     };
     
     console.log(videoName);
     
     MetricsModel.find(query,fields,function(err,docs){
-        var content="",
-            doc={};
-        // Initialize the data structure
+        var content="time,h2,time,https/1.1,time,http/1.1\n",
+        doc={},
+        size;
+        
         for(var i=0;i<docs.length;i++){
             doc=docs[i];
-            var proto=doc.protocol;
-            //console.log(doc.qualitySet[0]);
-            protocol[proto].data[0]=[].push(0);
             for(var j=0;j<doc.qualitySet.length;j++){
-                var time=Math.round(doc.qualitySet[j].time);
-                //console.log(doc.qualitySet[j].time);
-                //console.log(typeof time);
-                if(!protocol[proto].data[time]){ // if undefined
-                    //console.log("true");
-                    protocol[proto].data[time]=new Array();
-                    //console.log(protocol[proto].data[time]);
-                    //console.log(time);
+                var time=Math.round(doc.qualitySet[j].time)+"";
+                var bufferLevel=doc.qualitySet[j].bufferLevel
+                if(!stat[doc.protocol].data[time]){
+                    stat[doc.protocol].data[time]=[bufferLevel];
                 }
                 else{
-                   // console.log("false");
-                }
-                protocol[proto].data[time].push(parseFloat(doc.qualitySet[j].bufferLevel));
-                //console.log("RESULTAT"+protocol["h2"].data[1]);
-                //console.log(doc.qualitySet[j].bufferLevel);
-                //console.log(protocol[proto].data[time]);
-            }
-        }
-        
-        // Compute the average
-        for(var proto in protocol){
-            for(var time=0;time<protocol[proto].data.length;time++){
-                console.log("proto--> "+proto+" time -->"+time+" : "+protocol[proto].data[time]);
-                if(protocol[proto].data[time]){
-                    protocol[proto].average[time]=computeAverageFloat(protocol[proto].data[time]);
-                }
-                else{
-                    protocol[proto].average[time]=(parseFloat(protocol[proto].data[time+1])+parseFloat(protocol[proto].data[time-1]))/2;
+                    stat[doc.protocol].data[time].push(bufferLevel);
                 }
             }
         }
+        for(var proto in stat){
+            for(var time in stat[proto].data){
+                //stat[proto].average[time]=modeStatistic(stat[proto].data[time]);
+                stat[proto].display.push([time,computeAverageFloat(stat[proto].data[time])]);
+            }
+        }
         
-        size=Math.min(protocol["h2"].average.length,protocol["https/1.1"].average.length,protocol["http/1.1"].average.length);
+        size=Math.min(stat["h2"].display.length, stat["https/1.1"].display.length, stat["http/1.1"].display.length);
+        
         for(var i=0;i<size;i++){
-            content+=protocol["h2"].average[i]+IFS+protocol["https/1.1"].average[i]+IFS+protocol["http/1.1"].average[i];
+            content+=stat["h2"].display[i][0]+IFS+stat["h2"].display[i][1]+IFS+stat["https/1.1"].display[i][0]+IFS+stat["https/1.1"].display[i][1]+IFS+stat["http/1.1"].display[i][0]+IFS+stat["http/1.1"].display[i][1];
             if(i!=(size-1)){
-                content+="\n";
+                content+='\n';
             }
         }
-            
         fs.writeFileSync("./log/"+filename,content);
         res.type('text/plain');
         res.send("File "+filename+" generated"+"\n\n"+content);
-        //TODO res.download("/home/bruno/workspace/node-app/log/"+filename);
-    });
+   });
 });
 
 var computeAverageInt=function(tab){
